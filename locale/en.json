@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Browser mode",
+    "description": "Adds a Browser mode button beside Restart in the Windows titlebar: one press checks whether this browser is already signed in, mints a session cookie from the local credential store when it is not, and opens the web GUI in your default browser. If the browser cannot be started, it shows the one-time address to open yourself (valid for two minutes, single use). Titlebar only in the desktop app; the sign-in it creates lasts seven days; no secret is written to disk or sent anywhere.",
+    "detail": "docs/DETAIL.md"
+  }
+}

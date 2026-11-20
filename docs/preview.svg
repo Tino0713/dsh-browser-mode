@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" width="640" height="300" role="img" aria-label="A titlebar button beside Restart, and the same conversation open in a separate browser window">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4f6fa"/>
+      <stop offset="1" stop-color="#e8edf6"/>
+    </linearGradient>
+    <clipPath id="appClip"><rect x="48" y="40" width="360" height="220" rx="10"/></clipPath>
+  </defs>
+  <rect x="0" y="0" width="640" height="300" fill="url(#bg)"/>
+
+  <!-- the desktop app window -->
+  <rect x="48" y="40" width="360" height="220" rx="10" fill="#ffffff" stroke="#c9d3e3" stroke-width="1.5"/>
+  <g clip-path="url(#appClip)">
+    <rect x="48" y="40" width="360" height="30" fill="#eef2f9"/>
+    <rect x="48" y="69" width="360" height="1.5" fill="#d9e1ee"/>
+  </g>
+
+  <!-- the caption row where both buttons sit -->
+  <rect x="250" y="46" width="70" height="18" rx="5" fill="#e6ebf4" stroke="#c9d3e3" stroke-width="1"/>
+  <circle cx="261" cy="55" r="3.2" fill="none" stroke="#8595ad" stroke-width="1.6"/>
+  <path d="M261 51.6v3.4l2.2 1.6" fill="none" stroke="#8595ad" stroke-width="1.4" stroke-linecap="round"/>
+  <rect x="270" y="51" width="42" height="6" rx="3" fill="#c3cee0"/>
+
+  <rect x="326" y="46" width="66" height="18" rx="5" fill="#1d6fd8"/>
+  <rect x="335" y="51.5" width="10" height="7" rx="1.6" fill="none" stroke="#ffffff" stroke-width="1.4"/>
+  <path d="M335 54h10" stroke="#ffffff" stroke-width="1.1"/>
+  <rect x="349" y="51" width="34" height="6" rx="3" fill="#ffffff" opacity="0.92"/>
+
+  <!-- conversation content -->
+  <rect x="66" y="90" width="150" height="9" rx="4.5" fill="#d7dfec"/>
+  <rect x="66" y="108" width="300" height="8" rx="4" fill="#e4eaf4"/>
+  <rect x="66" y="124" width="268" height="8" rx="4" fill="#e4eaf4"/>
+  <rect x="66" y="140" width="286" height="8" rx="4" fill="#e4eaf4"/>
+  <rect x="66" y="164" width="324" height="52" rx="8" fill="#f7f9fd" stroke="#dde4f0" stroke-width="1"/>
+  <rect x="78" y="178" width="196" height="8" rx="4" fill="#dfe6f2"/>
+  <rect x="78" y="194" width="140" height="8" rx="4" fill="#e8edf6"/>
+
+  <!-- arrow from the app window to the browser -->
+  <path d="M418 152h32" fill="none" stroke="#8fa3bf" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M444 145l8 7-8 7" fill="none" stroke="#8fa3bf" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- the browser window the button opens -->
+  <rect x="462" y="86" width="132" height="132" rx="10" fill="#ffffff" stroke="#c9d3e3" stroke-width="1.5"/>
+  <rect x="462" y="86" width="132" height="26" rx="10" fill="#eef2f9"/>
+  <rect x="462" y="106" width="132" height="6" fill="#eef2f9"/>
+  <rect x="462" y="111.5" width="132" height="1.5" fill="#d9e1ee"/>
+  <circle cx="476" cy="99" r="2.6" fill="#c2cddd"/>
+  <circle cx="485" cy="99" r="2.6" fill="#c2cddd"/>
+  <circle cx="494" cy="99" r="2.6" fill="#c2cddd"/>
+  <rect x="502" y="94" width="78" height="10" rx="5" fill="#e3e9f3"/>
+
+  <rect x="476" y="126" width="104" height="7" rx="3.5" fill="#dfe6f2"/>
+  <rect x="476" y="140" width="82" height="7" rx="3.5" fill="#e8edf6"/>
+  <rect x="476" y="154" width="96" height="7" rx="3.5" fill="#e8edf6"/>
+
+  <!-- signed-in badge -->
+  <circle cx="566" cy="196" r="17" fill="#1d6fd8"/>
+  <path d="M558 196l5.5 5.5L574 191" fill="none" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
