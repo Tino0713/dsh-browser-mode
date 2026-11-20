@@ -2,6 +2,7 @@ node_modules/
 *.tgz
 .DS_Store
 
-# Local credentials 鈥?the GitHub token used to push lives here, never commit it.
+# Local credentials — the GitHub token used to push lives here, never commit it.
 .secrets/
 .marketplace/
+.notes/
