@@ -45,11 +45,13 @@ Get-Content ~/.dsh/dsh-browser-mode.log -Tail 5
 5. **PowerShell 5.1 的 `Invoke-WebRequest -Headers @{Cookie=…}` 会丢 Cookie**，必须用 `WebRequestSession` + `System.Net.Cookie`。
 6. **`git push` 的认证**：用 `-c http.extraHeader="Authorization: Basic <base64(Tino0713:token)>"`，`bearer` 不认；token 别写进 remote URL。
 7. 本机到 github.com 的 git 通道时断时续，`api.github.com` 通常正常——HTTP 断的时候可以走 REST API 提交。
+8. **端口一变就不再自动签入**（0.1.3 修）：旧版 `/open` 拿「发起请求的窗口」自己的 cookie 判断是否已登录——Electron 外壳永远持有当前 authority 的有效 cookie，于是它只开 `http://<authority>/`、不发登录链接，默认浏览器在新端口没有 cookie，结果就是 401。现在 `/open` 每次必铸链接，登录路由按**浏览器自己的** cookie 决定要不要 Set-Cookie。
+9. 本机沙箱里 `node --test test/` 会 `spawn EPERM`（禁止子进程），直接 `node test/browser-mode.test.mjs` 跑；npm 必须加 `--cache .npm-cache`，否则写 AppData 缓存被拒。git 走 HTTPS 在这台机器上 schannel/openssl 都会失败，发版走 REST API 或 `gh api`。
 
-## 当前状态（2026-11-20）
+## 当前状态（2026-11-27）
 
-- 本地已装（linked，指向本目录），已端到端验证：按钮可见、铸 cookie、浏览器真正兑换成功。
-- GitHub：`Tino0713/dsh-browser-mode`，`main` 到 `decaf2b` 已推；本地另有 2 个只含 `.gitignore` 改动的提交待推。
-- npm：`dsh-browser-mode@0.1.2`（`repository` 指回仓库，市场靠这个关联）。
+- 本地已装（linked，指向 `D:\github\dsh-browser-mode`——profile 里是指向它的 junction，重载前得先把改动同步到那份 clone），已端到端验证：按钮可见、铸 cookie、浏览器真正兑换成功；端口 63969 上实测「首次发 cookie / 再次识别已有 cookie」两条路径。
+- GitHub：`Tino0713/dsh-browser-mode`，`main` 已推到本次修复提交，tag `v0.1.3` + release。
+- npm：`dsh-browser-mode@0.1.3`（`repository` 指回仓库，市场靠这个关联）。
 - 市场 PR：`awesome-dsh-plugin/awesome-dsh-plugin#17152`（加 `data/plugins/Tino0713__dsh-browser-mode.yml`）。仓库是当天新建的，**CI 的「仓库满 1 天」门槛会自动过期重跑**，不要为此重新提 PR。
 - 未做：市场卡片目前只有一张标题栏截图；对话框、状态行的截图可以补。
