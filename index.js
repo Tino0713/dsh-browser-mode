@@ -7,10 +7,11 @@
  * stand in for it is signed with a secret the Host keeps in its credential store, so a plugin
  * that runs inside the Host can mint an equivalent cookie itself.
  *
- * This half does exactly that: it decides whether the asking browser is already signed in,
- * mints a fresh cookie when it is not, and hands the browser a one-time link that installs the
- * cookie before redirecting to the GUI. Nothing is written to disk; the link lives in memory for
- * two minutes and is usable once.
+ * This half does exactly that: every press mints a fresh one-time link for the origin the GUI is
+ * currently served on. When the browser follows the link, its own cookie decides whether the
+ * sign-in can be reused or a new one has to be installed — so a new port, an expired cookie, or a
+ * first visit all end the same way, signed in. Nothing is written to disk; the link lives in memory
+ * for two minutes and is usable once.
  *
  * The secret never leaves this process: it is read through `ctx.credentials`, used for one
  * HMAC, and not logged, echoed, or returned in any response.
@@ -118,6 +119,20 @@ function authorityOf(req, server) {
   }
   const port = server?.port
   return typeof port === 'number' && Number.isSafeInteger(port) ? `127.0.0.1:${String(port)}` : '127.0.0.1'
+}
+
+/**
+ * The GUI is served by the desktop shell on loopback only. Anything else in the Host header is
+ * refused rather than trusted, so a press can never mint a sign-in for an origin the shell would
+ * not serve itself.
+ */
+function isLoopbackAuthority(authority) {
+  try {
+    const hostname = new URL(`http://${authority}`).hostname.toLowerCase()
+    return hostname === 'localhost' || hostname === '[::1]' || /^127(?:\.\d{1,3}){3}$/u.test(hostname)
+  } catch {
+    return false
+  }
 }
 
 /** One cookie's value out of a Cookie header, or undefined. */
@@ -259,6 +274,11 @@ function createHandlers(ctx, server) {
     if (req?.method !== 'POST') return sendJson(res, 405, { status: 'failed', detail: 'POST required' })
     if (req?.headers?.[BUTTON_HEADER] !== '1') return sendJson(res, 403, { status: 'failed', detail: 'missing client header' })
     const authority = authorityOf(req, server)
+    // The GUI is a loopback desktop window, so that is the only origin this route signs in.
+    if (!isLoopbackAuthority(authority)) {
+      log(`refused browser mode for non-loopback authority ${authority}`)
+      return sendJson(res, 403, { status: 'unsupported', detail: 'browser mode only signs in a loopback origin' })
+    }
     const now = Date.now()
     let secret
     try {
@@ -268,21 +288,19 @@ function createHandlers(ctx, server) {
       log(`cannot mint a browser cookie: ${detail}`)
       return sendJson(res, 409, { status: 'unsupported', detail })
     }
-    // An answering browser that is already signed in is not asked to sign in again: the press
-    // opens the GUI directly, which is also the honest answer when a cookie was still valid.
+    // The cookie on the asking request belongs to the desktop shell's own jar, not to the browser
+    // that is about to be opened: the Host cannot see that browser's jar. So every press issues a
+    // fresh one-time link and lets the browser's own cookie decide at the login route whether the
+    // sign-in can be skipped. Deciding it here is what silently skipped the link after the GUI
+    // moved to a new port, leaving the browser at `authentication required`.
     const name = cookieNameFor(authority)
+    const shellSignedIn = verifyCookie(readCookieValue(req?.headers?.cookie, name), secret, authority, now) !== null
+    if (shellSignedIn) log(`browser mode: the desktop shell holds a valid cookie for ${authority}; issuing a link for the browser anyway`)
     const payload = {
       version: COOKIE_VERSION,
       authority,
       issuedAt: now,
       expiresAt: now + maxAgeDays * DAY_MILLISECONDS,
-    }
-    const existing = verifyCookie(readCookieValue(req?.headers?.cookie, name), secret, authority, now)
-    if (existing !== null) {
-      const url = `http://${authority}/`
-      const opened = openBrowser(url)
-      log('browser mode: this browser already holds a valid session cookie')
-      return sendJson(res, 200, { status: 'authenticated', opened, url, expiresAt: existing.expiresAt })
     }
     const value = encodeCookie(payload, secret)
     // Drop the oldest links first so a page that is left open cannot grow this map.
@@ -293,24 +311,47 @@ function createHandlers(ctx, server) {
       nonces.delete(oldest.value)
     }
     const nonce = base64url(randomBytes(18))
-    nonces.set(nonce, { cookie: sessionCookie(name, value, maxAgeDays * 86400), expiresAt: now + NONCE_TTL_MS })
+    nonces.set(nonce, { cookie: sessionCookie(name, value, maxAgeDays * 86400), authority, expiresAt: now + NONCE_TTL_MS })
     const url = `http://${authority}${LOGIN_PATH}?n=${nonce}`
     const opened = openBrowser(url)
     log(`browser mode: minted a ${String(maxAgeDays)}-day cookie for ${authority} (browser ${opened ? 'opened' : 'not opened'})`)
     return sendJson(res, 200, { status: 'minted', opened, url, expiresAt: payload.expiresAt })
   }
 
-  const loginHandler = (req, res) => {
+  const loginHandler = async (req, res) => {
     if (req?.method !== 'GET' && req?.method !== 'HEAD') return sendText(res, 405, 'GET required')
     const nonce = query(req).get('n') ?? ''
     const entry = nonces.get(nonce)
     if (entry === undefined) return sendText(res, 410, 'This browser-mode link is no longer valid. Press 浏览器模式 / Browser mode again.')
     nonces.delete(nonce)
-    if (entry.expiresAt <= Date.now()) return sendText(res, 410, 'This browser-mode link expired. Press 浏览器模式 / Browser mode again.')
+    const now = Date.now()
+    if (entry.expiresAt <= now) return sendText(res, 410, 'This browser-mode link expired. Press 浏览器模式 / Browser mode again.')
+    // The link was minted for the origin the press ran on; a browser arriving at another origin
+    // must not be handed a cookie signed for the first one.
+    if (authorityOf(req, server) !== entry.authority) {
+      return sendText(res, 409, 'This browser-mode link belongs to another address. Press 浏览器模式 / Browser mode again.')
+    }
+    let alreadySignedIn = false
     try {
-      res.writeHead(303, { location: '/', 'set-cookie': entry.cookie, 'cache-control': 'no-store' })
-      res.end()
-      log('browser mode: handed a session cookie to the browser')
+      const secret = await readSecret(ctx)
+      const name = cookieNameFor(entry.authority)
+      alreadySignedIn = verifyCookie(readCookieValue(req?.headers?.cookie, name), secret, entry.authority, now) !== null
+    } catch (error) {
+      // The link's own cookie is already signed, so it can still sign the browser in.
+      log(`browser mode: could not re-read the secret to check the browser cookie: ${error?.message ?? error}`)
+    }
+    try {
+      if (alreadySignedIn) {
+        // This browser already holds a valid cookie for the origin it used to get here: skip the
+        // Set-Cookie and land on the GUI as is.
+        res.writeHead(303, { location: '/', 'cache-control': 'no-store' })
+        res.end()
+        log(`browser mode: the browser already holds a valid cookie for ${entry.authority}`)
+      } else {
+        res.writeHead(303, { location: '/', 'set-cookie': entry.cookie, 'cache-control': 'no-store' })
+        res.end()
+        log(`browser mode: handed a session cookie to the browser for ${entry.authority}`)
+      }
     } catch (error) {
       log(`cannot answer the browser-mode link: ${error?.message ?? error}`)
       sendText(res, 503, 'The browser-mode link could not be answered.')

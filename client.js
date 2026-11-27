@@ -17,11 +17,10 @@ window.__ModuleLoader__.load({
     const COPY = (zh) => zh
       ? {
           label: '浏览器模式',
-          hint: '用默认浏览器打开网页版（会自动沿用当前登录状态）',
+          hint: '用默认浏览器打开网页版（登录失效时会自动重新签入）',
           title: '浏览器模式',
           ready: '正在准备浏览器模式…',
           opened: '已在默认浏览器中打开网页版。',
-          reopening: '当前浏览器已登录，正在打开网页版…',
           notOpened: '没能自动启动浏览器，可以用下面的地址手动打开：',
           copy: '复制地址',
           copied: '已复制',
@@ -31,11 +30,10 @@ window.__ModuleLoader__.load({
         }
       : {
           label: 'Browser mode',
-          hint: 'Open the web GUI in your default browser, reusing this sign-in',
+          hint: 'Open the web GUI in your default browser; it re-signs in when the sign-in expired',
           title: 'Browser mode',
           ready: 'Preparing browser mode…',
           opened: 'Opened the web GUI in your default browser.',
-          reopening: 'This browser is already signed in; opening the web GUI…',
           notOpened: 'The browser could not be started automatically. Open this address yourself:',
           copy: 'Copy address',
           copied: 'Copied',
@@ -251,7 +249,7 @@ window.__ModuleLoader__.load({
             const days = typeof data?.expiresAt === 'number'
               ? Math.max(1, Math.round((data.expiresAt - Date.now()) / 86400000))
               : DEFAULT_DAYS;
-            setStatus(data?.status === 'authenticated' ? copy.reopening : copy.opened, undefined);
+            setStatus(copy.opened, undefined);
             note.hidden = false;
             note.textContent = copy.note(days);
             if (data?.opened !== true && typeof data?.url === 'string') offerAddress(data.url);

@@ -1,8 +1,11 @@
 {
   "name": "dsh-browser-mode",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Adds a 浏览器模式 (Browser mode) button beside Restart in the Windows titlebar that signs the browser in and opens the DeepSeek Harness web GUI in your default browser.",
   "type": "module",
+  "scripts": {
+    "test": "node test/browser-mode.test.mjs"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Tino0713/dsh-browser-mode.git"

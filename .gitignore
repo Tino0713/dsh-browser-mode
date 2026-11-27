@@ -6,3 +6,9 @@ node_modules/
 .secrets/
 .marketplace/
 .notes/
+
+# Local scratch: npm cache inside the workspace and machine-specific notes
+.npm-cache/
+.memsearch/
+.tmp/
+SESSION-SUMMARY.md
